@@ -621,6 +621,10 @@ typedef EGLAPI EGLClientBuffer (EGLAPIENTRYP PFNEGLCREATENATIVECLIENTBUFFERANDRO
 #define EGL_MUTABLE_RENDER_BUFFER_BIT_KHR 0x1000
 #endif
 
+#ifdef MTK_HARDWARE
+void* egl_GVR_FrontBuffer(const EGLSurface surface);
+void* EGL_SEC_getClientBufferForFrontBuffer(EGLSurface surface);
+#endif
 #ifndef EGL_ANDROID_get_frame_timestamps
 #define EGL_ANDROID_get_frame_timestamps 1
 #define EGL_TIMESTAMPS_ANDROID 0x314D
@@ -637,6 +641,11 @@ EGLAPI EGLBoolean eglQueryTimestampSupportedANDROID(EGLDisplay dpy, EGLSurface s
 typedef EGLAPI EGLBoolean (EGLAPIENTRYP PFNEGLGETFRAMETIMESTAMPSANDROID) (EGLDisplay dpy, EGLSurface surface, EGLint framesAgo, EGLint numTimestamps, const EGLint *timestamps, EGLnsecsANDROID *values);
 typedef EGLAPI EGLBoolean (EGLAPIENTRYP PFNEGLQUERYTIMESTAMPSUPPORTEDANDROID) (EGLDisplay dpy, EGLSurface surface, EGLint timestamp);
 #endif
+#endif
+#ifdef MTK_HARDWARE
+void* egl_GVR_FrontBuffer(const EGLSurface surface);
+void* EGL_SEC_getClientBufferForFrontBuffer(EGLSurface surface);
+#define EGL_IS_INVALID_MTK    0x43210001
 #endif
 
 #ifdef __cplusplus

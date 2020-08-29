@@ -219,6 +219,12 @@ static const extention_map_t sExtensionMap[] = {
     { "eglCreateStreamFromFileDescriptorKHR",
             (__eglMustCastToProperFunctionPointerType)&eglCreateStreamFromFileDescriptorKHR },
 
+#ifdef MTK_HARDWARE
+    { "egl_GVR_FrontBuffer",
+            (__eglMustCastToProperFunctionPointerType)&egl_GVR_FrontBuffer },
+    { "EGL_SEC_getClientBufferForFrontBuffer",
+            (__eglMustCastToProperFunctionPointerType)&EGL_SEC_getClientBufferForFrontBuffer },
+#endif
     // EGL_ANDROID_get_frame_timestamps
     { "eglGetFrameTimestampsANDROID",
             (__eglMustCastToProperFunctionPointerType)&eglGetFrameTimestampsANDROID },
@@ -659,6 +665,16 @@ EGLBoolean eglQuerySurface( EGLDisplay dpy, EGLSurface surface,
         return setError(EGL_BAD_SURFACE, EGL_FALSE);
 
     egl_surface_t const * const s = get_surface(surface);
+#ifdef MTK_HARDWARE
+    if (attribute == EGL_IS_INVALID_MTK)
+    {
+        int tmp_w;
+        EGLNativeWindowType win = (EGLNativeWindowType)s->win.get();
+
+        *value = s->win->query(win, NATIVE_WINDOW_HEIGHT, &tmp_w) != 0 ? 1 : 0;
+        return EGL_TRUE;
+    }
+#endif
     return s->cnx->egl.eglQuerySurface(
             dp->disp.dpy, s->surface, attribute, value);
 }
@@ -834,6 +850,19 @@ EGLBoolean eglMakeCurrent(  EGLDisplay dpy, EGLSurface draw,
         // this will ALOGE the error
         egl_connection_t* const cnx = &gEGLImpl;
         result = setError(cnx->egl.eglGetError(), EGL_FALSE);
+#ifdef MTK_HARDWARE
+        if (NULL != cur_c)
+        {
+            SurfaceRef _cur_r(get_surface(cur_c->read));
+            SurfaceRef _cur_d(get_surface(cur_c->draw));
+
+            cur_c->read = EGL_NO_SURFACE;
+            cur_c->draw = EGL_NO_SURFACE;
+
+            _cur_r.release();
+            _cur_d.release();
+        }
+#endif
     }
     return result;
 }
@@ -1867,6 +1896,14 @@ EGLClientBuffer eglCreateNativeClientBufferANDROID(const EGLint *attrib_list)
                     if (value & EGL_NATIVE_BUFFER_USAGE_TEXTURE_BIT_ANDROID) {
                         usage |= GRALLOC_USAGE_HW_TEXTURE;
                     }
+#ifdef MTK_HARDWARE
+                    // The buffer must be used for either a texture or a
+                    // renderbuffer.
+                    if ((value & EGL_NATIVE_BUFFER_USAGE_RENDERBUFFER_BIT_ANDROID) &&
+                        (value & EGL_NATIVE_BUFFER_USAGE_TEXTURE_BIT_ANDROID)) {
+                        return setError(EGL_BAD_PARAMETER, (EGLClientBuffer)0);
+                    }
+#endif
                     break;
                 default:
                     return setError(EGL_BAD_PARAMETER, (EGLClientBuffer)0);
@@ -2035,6 +2072,44 @@ EGLBoolean eglSetDamageRegionKHR(EGLDisplay dpy, EGLSurface surface,
 
     return EGL_FALSE;
 }
+
+#ifdef MTK_HARDWARE
+void* egl_GVR_FrontBuffer(const EGLSurface surface)
+{
+    clearError();
+    ALOGW("[MTKME2] [egl_GVR_FrontBuffer] [+]: surface(%p)\n", surface);
+
+    int fbr_egl_enabled = 1;
+    char prop_value[128];
+
+    if (property_get("mtk.egl.fbr.enable", prop_value, "1") > 0) {
+        fbr_egl_enabled = atoi(prop_value);
+    }
+
+    if (!fbr_egl_enabled) {
+        ALOGW("[MTKME2] [egl_GVR_FrontBuffer] [-]: return NULL! FBR is not enabled, fbr_egl_enabled(%d)\n", fbr_egl_enabled);
+        return NULL;
+    }
+
+    egl_surface_t const * const s = get_surface(surface);
+    if (s->cnx->egl.eglGvrFrontBuffer) {
+        if(s->cnx->egl.eglGvrFrontBuffer(s->surface)) {
+            ALOGW("[MTKME2] [egl_GVR_FrontBuffer] [-]: return surface(%p)\n", surface);
+            return surface;
+        }
+    }
+
+    ALOGW("[MTKME2] [egl_GVR_FrontBuffer] [-]: return NULL!\n");
+    return NULL;
+}
+
+void* EGL_SEC_getClientBufferForFrontBuffer(EGLSurface surface)
+{
+    ALOGW("[MTKME2] [EGL_SEC_getClientBufferForFrontBuffer]: surface(%p)\n", surface);
+    return NULL;
+}
+#endif
+
 
 EGLBoolean eglGetFrameTimestampsANDROID(EGLDisplay dpy, EGLSurface surface,
         EGLint framesAgo, EGLint numTimestamps, const EGLint *timestamps,

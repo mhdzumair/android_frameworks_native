@@ -164,6 +164,17 @@ typedef enum OMX_COLOR_FORMATTYPE {
      *  codec can substitute any YUV420 packed planar or semiplanar
      *  format for it. */
     OMX_COLOR_FormatYUV420Flexible = 0x7F420888,
+    #ifdef MTK_HARDWARE
+    OMX_COLOR_FormatVendorMTKYUV = 0x7F000001,
+    OMX_COLOR_FormatVendorMTKYUV_FCM = 0x7F000002,
+    OMX_COLOR_FormatVendorMTKYUV_UFO = 0x7F000003,
+    OMX_COLOR_FormatVendorMTKYUV_10BIT_H = 0x7F000004,
+    OMX_COLOR_FormatVendorMTKYUV_10BIT_V = 0x7F000005,
+    OMX_COLOR_FormatVendorMTKYUV_UFO_10BIT_H = 0x7F000006,
+    OMX_COLOR_FormatVendorMTKYUV_UFO_10BIT_V = 0x7F000007,
+    OMX_MTK_COLOR_FormatYV12 = 0x7F000200,
+    OMX_MTK_COLOR_FormatBitStream = 0x7F000300,
+    #endif
 
     OMX_TI_COLOR_FormatYUV420PackedSemiPlanar = 0x7F000100,
     OMX_QCOM_COLOR_FormatYVU420SemiPlanar = 0x7FA30C00,

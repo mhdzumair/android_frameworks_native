@@ -24,9 +24,9 @@
 #include <utils/Errors.h>
 #include <utils/Singleton.h>
 #include <utils/String8.h>
-
+#ifndef MTK_HARDWARE
 #include <gui/GraphicsEnv.h>
-
+#endif
 #include <EGL/egl.h>
 
 // ----------------------------------------------------------------------------
@@ -55,10 +55,10 @@ class Loader : public Singleton<Loader>
     };
     
     getProcAddressType getProcAddress;
-
+#ifndef MTK_HARDWARE
     void* mLibGui;
     decltype(android_getDriverNamespace)* mGetDriverNamespace;
-
+#endif
 public:
     ~Loader();
     

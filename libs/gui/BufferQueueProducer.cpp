@@ -1131,11 +1131,17 @@ status_t BufferQueueProducer::connect(const sp<IProducerListener>& listener,
                         BQ_LOGE("connect: linkToDeath failed: %s (%d)",
                                 strerror(-status), status);
                     }
+#ifndef MTK_HARDWARE
                     mCore->mLinkedToDeath = listener;
+#endif
                 }
+#ifndef MTK_HARDWARE
                 if (listener->needsReleaseNotify()) {
+#endif
                     mCore->mConnectedProducerListener = listener;
+#ifndef MTK_HARDWARE
                 }
+#endif
             }
             break;
         default:
@@ -1198,9 +1204,15 @@ status_t BufferQueueProducer::disconnect(int api, DisconnectMode mode) {
                     mCore->freeAllBuffersLocked();
 
                     // Remove our death notification callback if we have one
+#ifndef MTK_HARDWARE
                     if (mCore->mLinkedToDeath != NULL) {
                         sp<IBinder> token =
                                 IInterface::asBinder(mCore->mLinkedToDeath);
+#else
+                    if (mCore->mConnectedProducerListener != NULL) {
+                        sp<IBinder> token =
+                                IInterface::asBinder(mCore->mConnectedProducerListener);
+#endif
                         // This can fail if we're here because of the death
                         // notification, but we just ignore it
                         token->unlinkToDeath(
@@ -1208,7 +1220,9 @@ status_t BufferQueueProducer::disconnect(int api, DisconnectMode mode) {
                     }
                     mCore->mSharedBufferSlot =
                             BufferQueueCore::INVALID_BUFFER_SLOT;
+#ifndef MTK_HARDWARE
                     mCore->mLinkedToDeath = NULL;
+#endif
                     mCore->mConnectedProducerListener = NULL;
                     mCore->mConnectedApi = BufferQueueCore::NO_CONNECTED_API;
                     mCore->mConnectedPid = -1;

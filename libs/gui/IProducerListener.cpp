@@ -22,7 +22,9 @@ namespace android {
 
 enum {
     ON_BUFFER_RELEASED = IBinder::FIRST_CALL_TRANSACTION,
+#ifndef MTK_HARDWARE
     NEEDS_RELEASE_NOTIFY,
+#endif
 };
 
 class BpProducerListener : public BpInterface<IProducerListener>
@@ -38,7 +40,7 @@ public:
         data.writeInterfaceToken(IProducerListener::getInterfaceDescriptor());
         remote()->transact(ON_BUFFER_RELEASED, data, &reply, IBinder::FLAG_ONEWAY);
     }
-
+#ifndef MTK_HARDWARE
     virtual bool needsReleaseNotify() {
         bool result;
         Parcel data, reply;
@@ -55,6 +57,7 @@ public:
         }
         return result;
     }
+#endif
 };
 
 // Out-of-line virtual method definition to trigger vtable emission in this
@@ -70,16 +73,19 @@ status_t BnProducerListener::onTransact(uint32_t code, const Parcel& data,
             CHECK_INTERFACE(IProducerListener, data, reply);
             onBufferReleased();
             return NO_ERROR;
+#ifndef MTK_HARDWARE
         case NEEDS_RELEASE_NOTIFY:
             CHECK_INTERFACE(IProducerListener, data, reply);
             reply->writeBool(needsReleaseNotify());
             return NO_ERROR;
+#endif
     }
     return BBinder::onTransact(code, data, reply, flags);
 }
-
+#ifndef MTK_HARDWARE
 bool BnProducerListener::needsReleaseNotify() {
     return true;
 }
+#endif
 
 } // namespace android

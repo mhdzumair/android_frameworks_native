@@ -132,6 +132,24 @@ status_t SurfaceControl::setBlurMaskAlphaThreshold(float alpha) {
     return mClient->setBlurMaskAlphaThreshold(mHandle, alpha);
 }
 status_t SurfaceControl::setPosition(float x, float y) {
+#ifdef MTK_HARDWARE
+    const float ub = 20000.0;
+    const float lb = -20000.0;
+    if (CC_UNLIKELY(x > ub)) {
+        ALOGE("setPosition out of boundary: x = %f", x);
+        x = ub;
+    } else if (CC_UNLIKELY(x < lb)) {
+        ALOGE("setPosition out of boundary: x = %f", x);
+        x = lb;
+    }
+    if (CC_UNLIKELY(y > ub)) {
+        ALOGE("setPosition out of boundary: y = %f", y);
+        y = ub;
+    } else if (CC_UNLIKELY(x < lb)) {
+        ALOGE("setPosition out of boundary: y = %f", y);
+        y = lb;
+    }
+#endif
     status_t err = validate();
     if (err < 0) return err;
     return mClient->setPosition(mHandle, x, y);

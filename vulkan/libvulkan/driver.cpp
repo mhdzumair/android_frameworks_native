@@ -26,8 +26,9 @@
 
 #include <android/dlext.h>
 #include <cutils/properties.h>
+#ifndef MTK_HARDWARE
 #include <gui/GraphicsEnv.h>
-
+#endif
 #include "driver.h"
 #include "stubhal.h"
 
@@ -128,7 +129,7 @@ class CreateInfoWrapper {
 };
 
 Hal Hal::hal_;
-
+#ifndef MTK_HARDWARE
 void* LoadLibrary(const android_dlextinfo& dlextinfo,
                   const char* subname,
                   int subname_len) {
@@ -181,13 +182,13 @@ int LoadUpdatedDriver(const hw_module_t** module) {
     ALOGD("loaded updated driver");
     return 0;
 }
-
+#endif
 bool Hal::Open() {
     ALOG_ASSERT(!hal_.dev_, "OpenHAL called more than once");
 
     // Use a stub device unless we successfully open a real HAL device.
     hal_.dev_ = &stubhal::kDevice;
-
+#ifndef MTK_HARDWARE
     int result;
     const hwvulkan_module_t* module = nullptr;
 
@@ -206,7 +207,16 @@ bool Hal::Open() {
         ALOGV("unable to load Vulkan HAL, using stub HAL (result=%d)", result);
         return true;
     }
+#else
+    const hwvulkan_module_t* module;
+    int result =
+        hw_get_module("vulkan", reinterpret_cast<const hw_module_t**>(&module));
+    if (result != 0) {
+        ALOGI("no Vulkan HAL present, using stub HAL");
+        return true;
+    }
 
+#endif
     hwvulkan_device_t* device;
     result =
         module->common.methods->open(&module->common, HWVULKAN_DEVICE_0,

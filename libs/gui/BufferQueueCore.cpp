@@ -59,7 +59,9 @@ BufferQueueCore::BufferQueueCore(const sp<IGraphicBufferAlloc>& allocator) :
     mConsumerListener(),
     mConsumerUsageBits(0),
     mConnectedApi(NO_CONNECTED_API),
+#ifndef MTK_HARDWARE
     mLinkedToDeath(),
+#endif
     mConnectedProducerListener(),
     mSlots(),
     mQueue(),

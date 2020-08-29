@@ -67,11 +67,41 @@ status_t Fence::waitForever(const char* logname) {
     if (err < 0 && errno == ETIME) {
         ALOGE("%s: fence %d didn't signal in %u ms", logname, mFenceFd,
                 warningTimeout);
+#ifdef MTK_HARDWARE
+        dump(mFenceFd);
+#endif
+
         err = sync_wait(mFenceFd, TIMEOUT_NEVER);
     }
     return err < 0 ? -errno : status_t(NO_ERROR);
 }
-
+#ifdef MTK_HARDWARE
+sp<Fence> Fence::merge(const String8& name, const sp<Fence>& f1,
+        const sp<Fence>& f2) {
+    ATRACE_CALL();
+    int result;
+    // Merge the two fences.  In the case where one of the fences is not a
+    // valid fence (e.g. NO_FENCE) we merge the one valid fence with itself so
+    // that a new fence with the given name is created.
+    if (f1->isValid() && f2->isValid()) {
+        result = sync_merge(name.string(), f1->mFenceFd, f2->mFenceFd);
+    } else if (f1->isValid()) {
+        result = sync_merge(name.string(), f1->mFenceFd, f1->mFenceFd);
+    } else if (f2->isValid()) {
+        result = sync_merge(name.string(), f2->mFenceFd, f2->mFenceFd);
+    } else {
+        return NO_FENCE;
+    }
+    if (result == -1) {
+        status_t err = -errno;
+        ALOGE("merge: sync_merge(\"%s\", %d, %d) returned an error: %s (%d)",
+                name.string(), f1->mFenceFd, f2->mFenceFd,
+                strerror(-err), err);
+        return NO_FENCE;
+    }
+    return sp<Fence>(new Fence(result));
+}
+#else
 sp<Fence> Fence::merge(const char* name, const sp<Fence>& f1,
         const sp<Fence>& f2) {
     ATRACE_CALL();
@@ -102,6 +132,7 @@ sp<Fence> Fence::merge(const String8& name, const sp<Fence>& f1,
         const sp<Fence>& f2) {
     return merge(name.string(), f1, f2);
 }
+#endif
 
 int Fence::dup() const {
     return ::dup(mFenceFd);
